@@ -1,36 +1,47 @@
-# CHANGELOG Generator
+# Pre-Tool-Use Security Hook for Claude Code
 
-A structured CHANGELOG generator from git history. Works via Claude Code skill or standalone scripts.
+A Python hook that intercepts dangerous bash commands before Claude Code executes them.
 
-## Quick Start (3 Steps)
-
-### 1. Install
+## Installation (2 commands)
 
 ```bash
-# Clone or copy these files into your project
-python generate_changelog.py --repo OWNER/REPO --output CHANGELOG.md
+# 1. Create hooks directory and copy hook
+mkdir -p ~/.claude/hooks && cp pre_tool_use_hook.py ~/.claude/hooks/pre_tool_use_hook.py
+
+# 2. Verify installation
+python ~/.claude/hooks/pre_tool_use_hook.py --test
 ```
 
-### 2. Generate
+## How It Works
+
+The hook automatically runs when Claude Code executes bash commands. It:
+
+- **Blocks** dangerous patterns (`rm -rf`, `DROP TABLE`, `git push --force`, etc.)
+- **Logs** every blocked attempt to `~/.claude/hooks/blocked.log`
+- **Allows** safe commands to proceed normally
+- **Shows** a clear message explaining why a command was blocked
+
+## Blocked Patterns
+
+| Pattern | Example |
+|---------|---------|
+| File destruction | `rm -rf`, `rm --recursive -f` |
+| Database destruction | `DROP TABLE`, `TRUNCATE`, `DELETE FROM` (no WHERE) |
+| Git destruction | `git push --force`, `git push -f` |
+| Disk destruction | `mkfs` |
+| Permission danger | `chmod 777`, `chmod -R 777` |
+
+## Safe Patterns (Allowed)
+
+- `rm -i` (interactive delete)
+- `git push --force-with-lease` (safe force push)
+
+## Testing
 
 ```bash
-# API mode (no git required)
-python generate_changelog.py --repo OWNER/REPO --output CHANGELOG.md
+# Run full test suite
+python pre_tool_use_hook.py --test
 
-# Or git mode (local repo)
-python generate_changelog.py --git-path ./my-project --since-tag v1.0.0
-
-# Bash wrapper
-./generate-changelog.sh --since-tag v1.0.0
+# Test a single command
+python pre_tool_use_hook.py 'rm -rf /'
 ```
-
-### 3. Use in Claude Code
-
-Just run `/generate-changelog` in Claude Code.
-
-## Features
-
-- Auto-categorizes: Added / Fixed / Changed / Removed / Performance / Security
-- Parses conventional commits: `feat(scope): description`
-- Supports GitHub API mode (no git required)
-- Clean Markdown output with SHA references
