@@ -1,53 +1,59 @@
-# Claude Builders Bounty 🤖
+﻿# README.md - Pre-Tool-Use Hook for Blocking Destructive Bash Commands
 
-> A community bounty board for Claude Code builders.
+> Intercepts dangerous bash commands before Claude Code executes them.
 
-Building with Claude Code? Have tasks to delegate?
-Want to get paid for contributing to AI projects?
-You're in the right place.
+## Installation (2 commands)
 
----
+```bash
+mkdir -p ~/.claude/hooks
+curl -sL https://raw.githubusercontent.com/dandan0913/destructive-hooks/main/pre_tool_use_hook.py -o ~/.claude/hooks/pre_tool_use_hook.py
+```
 
-## How it works
+Or clone and copy manually:
 
-**To post a bounty**
-1. Open a GitHub issue with a clear description and acceptance criteria
-2. Comment `/opire create $XXX` in the issue to set the reward
-3. Share the link — contributors will find it
+```bash
+git clone https://github.com/dandan0913/destructive-hooks.git
+cp destructive-hooks/pre_tool_use_hook.py ~/.claude/hooks/pre_tool_use_hook.py
+```
 
-**To claim a bounty**
-1. Browse the open issues below
-2. Comment `/opire try` in the issue you want to work on
-3. Submit a PR — payment is automatic on merge ✅
+## How It Works
 
----
+This Claude Code `pre_tool_use` hook scans every bash command before execution. If a command matches a known dangerous pattern, it is **blocked** and Claude Code receives a clear error message explaining why.
 
-## Active Bounties
+## Blocked Patterns
 
-| # | Task | Amount | Status |
-|---|------|--------|--------|
-| [#1](../../issues/1) | SKILL: Generate a CHANGELOG from git history | $50 | 🟢 Open |
-| [#2](../../issues/2) | TEMPLATE: CLAUDE.md for a Next.js + SQLite project | $75 | 🟢 Open |
-| [#3](../../issues/3) | HOOK: Block destructive bash commands in Claude Code | $100 | 🟢 Open |
-| [#4](../../issues/4) | AGENT: PR reviewer with structured Markdown output | $150 | 🟢 Open |
-| [#5](../../issues/5) | WORKFLOW: n8n + Claude API — automated weekly dev summary | $200 | 🟢 Open |
+| Pattern | Why It's Dangerous |
+|---------|-------------------|
+| `rm -rf` | Recursive forceful deletion — irreversible |
+| `DROP TABLE` | Drops entire database tables |
+| `TRUNCATE` | Clears all data from a table |
+| `DELETE FROM` without `WHERE` | Deletes ALL rows in a table |
+| `git push --force` / `-f` | Overwrites remote history |
+| `dd if=/dev/zero` | Overwrites disk with zeros |
+| `chmod 777` / `chmod o+w` | World-writable permissions — security risk |
+| `sudo rm -rf` | Privileged recursive deletion |
+| `mkfs` | Formats disk partitions |
+| `shred -u` | Irreversible secure deletion |
 
----
+## Logging
 
-## Rules
+Every blocked attempt is logged to `~/.claude/hooks/blocked.log` with:
+- Timestamp (UTC)
+- The attempted command
+- The reason it was blocked
+- The project path
 
-- Tasks must be related to Claude Code or AI tooling
-- Every issue must have clear acceptance criteria before a bounty is activated
-- Payment is handled by [Opire](https://opire.dev) (Stripe)
-- Quality over speed — a solid PR beats a fast one
+## Configuration
 
----
+To add new patterns, edit the `BLOCKED_PATTERNS` list in `pre_tool_use_hook.py`:
 
-## Community
+```python
+BLOCKED_PATTERNS = [
+    (r'\bpattern\b', 'Reason for blocking'),
+    # Add more patterns here
+]
+```
 
-- 🐦 X: [@ClaudeBounty](https://x.com/ClaudeBounty)
-- 📧 Contact: claudebounty@gmail.com
+## License
 
----
-
-*Started by the Claude builder community · March 2026 · MIT License*
+MIT
