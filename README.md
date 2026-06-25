@@ -1,58 +1,69 @@
-﻿# README.md - Pre-Tool-Use Hook for Blocking Destructive Bash Commands
+﻿# PR Review Agent
 
-> Intercepts dangerous bash commands before Claude Code executes them.
+A Claude Code agent that analyzes PR diffs and generates structured review comments.
 
-## Installation (2 commands)
-
-```bash
-mkdir -p ~/.claude/hooks
-curl -sL https://raw.githubusercontent.com/dandan0913/destructive-hooks/main/pre_tool_use_hook.py -o ~/.claude/hooks/pre_tool_use_hook.py
-```
-
-Or clone and copy manually:
+## Quick Start
 
 ```bash
-git clone https://github.com/dandan0913/destructive-hooks.git
-cp destructive-hooks/pre_tool_use_hook.py ~/.claude/hooks/pre_tool_use_hook.py
+# Install dependencies
+pip install -r requirements.txt
+
+# Review a PR
+python claude_review.py --pr https://github.com/owner/repo/pull/123
+
+# Or review a diff file
+python claude_review.py --diff path/to/diff.patch
+
+# Save to file
+python claude_review.py --pr URL --output review.md
 ```
 
-## How It Works
+## Usage
 
-This Claude Code `pre_tool_use` hook scans every bash command before execution. If a command matches a known dangerous pattern, it is **blocked** and Claude Code receives a clear error message explaining why.
+- `--pr URL`: GitHub PR URL to review
+- `--diff FILE`: Path to diff/patch file
+- `--output FILE`: Write review to file (default: stdout)
+- `--json`: Output in JSON format
+- `--token TOKEN`: GitHub personal access token
 
-## Blocked Patterns
+## Features
 
-| Pattern | Why It's Dangerous |
-|---------|-------------------|
-| `rm -rf` | Recursive forceful deletion — irreversible |
-| `DROP TABLE` | Drops entire database tables |
-| `TRUNCATE` | Clears all data from a table |
-| `DELETE FROM` without `WHERE` | Deletes ALL rows in a table |
-| `git push --force` / `-f` | Overwrites remote history |
-| `dd if=/dev/zero` | Overwrites disk with zeros |
-| `chmod 777` / `chmod o+w` | World-writable permissions — security risk |
-| `sudo rm -rf` | Privileged recursive deletion |
-| `mkfs` | Formats disk partitions |
-| `shred -u` | Irreversible secure deletion |
+- Automatic PR diff fetching
+- Structured Markdown output
+- Risk identification
+- Improvement suggestions
+- Confidence scoring
+- Statistics calculation
 
-## Logging
+## Output Format
 
-Every blocked attempt is logged to `~/.claude/hooks/blocked.log` with:
-- Timestamp (UTC)
-- The attempted command
-- The reason it was blocked
-- The project path
+The agent generates a structured Markdown review with:
 
-## Configuration
+1. **Summary** - Brief overview of changes
+2. **Statistics** - Lines added/removed, files changed
+3. **Risk Assessment** - Risk level and confidence score
+4. **Identified Risks** - Specific concerns found in the code
+5. **Recommendations** - Actionable suggestions
 
-To add new patterns, edit the `BLOCKED_PATTERNS` list in `pre_tool_use_hook.py`:
+## Testing
 
-```python
-BLOCKED_PATTERNS = [
-    (r'\bpattern\b', 'Reason for blocking'),
-    # Add more patterns here
-]
+```bash
+# Test with a real PR
+python claude_review.py --pr https://github.com/python/cpython/pull/100000 --output test_review.md
+
+# Test with diff file
+curl -H "Authorization: token $GITHUB_TOKEN" \
+  https://api.github.com/repos/owner/repo/pulls/123/diff > test.patch
+
+python claude_review.py --diff test.patch --output test_review.md
 ```
+
+## Installation
+
+1. Clone this repository
+2. Install dependencies: `pip install -r requirements.txt`
+3. Set GitHub token (optional): `export GITHUB_TOKEN=your_token`
+4. Run: `python claude_review.py --pr PR_URL`
 
 ## License
 
